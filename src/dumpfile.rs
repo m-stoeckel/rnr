@@ -3,13 +3,20 @@ use error::*;
 use serde_json;
 use solver::{Operation, Operations};
 use std::fs::File;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Dump operations intto file in JSON format
 pub fn dump_to_file(operations: &[Operation]) -> Result<()> {
     let now = chrono::Local::now();
+
+    let cwd = std::env::current_dir().map_err(|e| Error {
+        kind: ErrorKind::Generic,
+        value: Some(e.to_string()),
+    })?;
+
     let dump = DumpFormat {
         date: now.format("%Y-%m-%d %H:%M:%S").to_string(),
+        directory: cwd.to_str().unwrap().to_string(),
         operations: operations.to_vec(),
     };
 
@@ -61,5 +68,6 @@ pub fn read_from_file(filepath: &Path) -> Result<Operations> {
 #[derive(Serialize, Deserialize)]
 struct DumpFormat {
     date: String,
+    directory: String,
     operations: Operations,
 }
