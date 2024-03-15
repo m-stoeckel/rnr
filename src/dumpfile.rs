@@ -22,14 +22,25 @@ pub fn dump_to_file(operations: &[Operation]) -> Result<()> {
 
     // Create filename with the following syntax: "rnr-<DATE>.json"
     let filename = "rnr-".to_string() + &now.format("%Y-%m-%d_%H%M%S").to_string() + ".json";
+    let path = home::home_dir()
+        .map(|path: PathBuf| {
+            let path = path.join(".rnr");
+            if !path.exists() {
+                std::fs::create_dir_all(&path)?;
+            }
+            Ok::<PathBuf, std::io::Error>(path)
+        })
+        .unwrap_or(Ok(cwd))
+        .unwrap()
+        .join(filename);
 
     // Dump info to a file
-    let file = match File::create(&filename) {
+    let file = match File::create(path.to_str().unwrap()) {
         Ok(file) => file,
         Err(_) => {
             return Err(Error {
                 kind: ErrorKind::CreateFile,
-                value: Some(filename),
+                value: Some(path.to_str().unwrap().to_string()),
             })
         }
     };
@@ -37,7 +48,7 @@ pub fn dump_to_file(operations: &[Operation]) -> Result<()> {
         Ok(_) => Ok(()),
         Err(_) => Err(Error {
             kind: ErrorKind::JsonParse,
-            value: Some(filename),
+            value: Some(path.to_str().unwrap().to_string()),
         }),
     }
 }
